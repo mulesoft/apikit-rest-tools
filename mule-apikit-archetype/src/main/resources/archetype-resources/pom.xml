@@ -1,0 +1,57 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>${meta.prefix}${meta.groupId}${meta.suffix}</groupId>
+    <artifactId>${meta.prefix}${meta.artifactId}${meta.suffix}</artifactId>
+    <version>${meta.prefix}${meta.version}${meta.suffix}</version>
+    <packaging>mule-application</packaging>
+    <name>Mule APIKit Application</name>
+
+    <properties>
+        <mule.maven.plugin.version>3.0.0-SNAPSHOT</mule.maven.plugin.version>
+        <mule.http.connector.version>1.0.0-SNAPSHOT</mule.http.connector.version>
+    </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.mule.tools.maven</groupId>
+                <artifactId>mule-maven-plugin</artifactId>
+                <version>${mule.maven.plugin.version}</version>
+                <extensions>true</extensions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-apikit-module</artifactId>
+            <version>${project.version}</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-http-connector</artifactId>
+            <classifier>mule-plugin</classifier>
+            <version>${mule.http.connector.version}</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>mule-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>mule-snapshots</id>
+            <name>MuleSoft Snapshots Repository</name>
+            <url>https://repository.mulesoft.org/snapshots/</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+</project>
