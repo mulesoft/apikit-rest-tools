@@ -6,6 +6,8 @@
  */
 package org.mule.tools.apikit;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -14,11 +16,26 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.Scanner;
+import org.mule.apikit.model.ApiSpecification;
+import org.mule.apikit.model.api.ApiReference;
+import org.mule.parser.service.ParserService;
+import org.mule.parser.service.result.ParseResult;
+import org.mule.tools.apikit.model.MuleConfig;
+import org.mule.tools.apikit.model.MuleConfigBuilder;
+import org.mule.tools.apikit.model.MuleDomain;
 import org.mule.tools.apikit.model.RuntimeEdition;
+import org.mule.tools.apikit.model.ScaffolderContext;
+import org.mule.tools.apikit.model.ScaffolderContextBuilder;
+import org.mule.tools.apikit.model.ScaffoldingConfiguration;
+import org.mule.tools.apikit.model.ScaffoldingResult;
 import org.sonatype.plexus.build.incremental.BuildContext;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -112,8 +129,21 @@ public class CreateMojo
     return Arrays.asList(result);
   }
 
-  public void execute()
-      throws MojoExecutionException {
+
+  private List<MuleConfig> createMuleConfigsFromLocations(List<String> muleConfigsPaths) {
+    List<MuleConfig> muleConfigs = new ArrayList<>();
+    for (String location : muleConfigsPaths) {
+      try {
+        muleConfigs.add(MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location))));
+      } catch (Exception e) {
+        log.warn(location + " could not be parsed as mule config");
+      }
+    }
+    return muleConfigs;
+  }
+
+
+  public void execute() throws MojoExecutionException {
     Validate.notNull(muleXmlDirectory, "Error: muleXmlDirectory parameter cannot be null");
     Validate.notNull(specDirectory, "Error: specDirectory parameter cannot be null");
 
@@ -128,21 +158,75 @@ public class CreateMojo
     log.info("Processing the following RAML files: " + specFiles);
     log.info("Processing the following xml files as mule configs: " + muleXmlFiles);
 
-    try {
-      final RuntimeEdition muleRuntimeEdition = RuntimeEdition.valueOf(this.runtimeEdition);
-      Scaffolder scaffolder = Scaffolder.createScaffolder(log, muleXmlOutputDirectory, specFiles, muleXmlFiles, domainFile,
-                                                          minMuleVersion, muleRuntimeEdition);
-      scaffolder.run();
-    } catch (IOException e) {
-      throw new MojoExecutionException(e.getMessage());
+    MainAppScaffolder mainAppScaffolder = getMainAppScaffolder();
+    List<MuleConfig> muleConfigs = createMuleConfigsFromLocations(muleXmlFiles);
+    List<ApiSpecification> apiSpecificationList = getApiSpecifications(specFiles);
+    ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
+
+    for (ApiSpecification apiSpecification : apiSpecificationList) {
+      try {
+        ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
+        ScaffoldingResult result = mainAppScaffolder.run(configuration);
+
+        if (result.isSuccess()) {
+          copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlDirectory);
+        }
+      } catch (Exception e) {
+        throw new MojoExecutionException(e.getMessage());
+      }
     }
+  }
+
+  private static ScaffoldingConfiguration.Builder getConfigurationBuilder(String domainFile, List<MuleConfig> muleConfigs) throws MojoExecutionException {
+    ScaffoldingConfiguration.Builder configurationBuilder = new ScaffoldingConfiguration.Builder();
+    configurationBuilder.withMuleConfigurations(muleConfigs);
+    if (domainFile != null) {
+      MuleDomain muleDomain;
+      try {
+        muleDomain = MuleDomain.fromInputStream(Files.newInputStream(Paths.get(domainFile)));
+      } catch (Exception e) {
+        throw new MojoExecutionException(e.getMessage());
+      }
+      configurationBuilder.withDomain(muleDomain);
+    }
+    return configurationBuilder;
+  }
+
+  private static void copyGeneratedConfigs(List<MuleConfig> generatedConfigs, File muleXmlDirectory) throws IOException {
+    for (MuleConfig generatedConfig : generatedConfigs) {
+      String name = generatedConfig.getName();
+      name = StringUtils.isBlank(name) ? "api.xml" : name;
+      File file = new File(muleXmlDirectory, name);
+      try (FileOutputStream stream = new FileOutputStream(file)) {
+        IOUtils.copy(generatedConfig.getContent(), stream);
+      }
+    }
+  }
+
+  private MainAppScaffolder getMainAppScaffolder() {
+    RuntimeEdition muleRuntimeEdition = RuntimeEdition.valueOf(this.runtimeEdition);
+    ScaffolderContext context = ScaffolderContextBuilder.builder().withRuntimeEdition(muleRuntimeEdition).build();
+    return new MainAppScaffolder(context);
+  }
+
+  private List<ApiSpecification> getApiSpecifications(List<String> specFiles) {
+    List<ApiSpecification> apiSpecificationList = new ArrayList<>();
+    for (String specFile : specFiles) {
+      ApiReference apiReference = ApiReference.create(Paths.get(specFile).toUri());
+      ParseResult parseResult = new ParserService().parse(apiReference);
+
+      if (parseResult.success()) {
+        apiSpecificationList.add(parseResult.get());
+      }
+    }
+    return apiSpecificationList;
   }
 
   private String processDomain() {
     String domainFile = null;
 
     if (domainDirectory != null) {
-      List<String> domainFiles = getIncludedFiles(domainDirectory, new String[] {"*.xml"}, new String[] {});
+      List<String> domainFiles = getIncludedFiles(domainDirectory, new String[]{"*.xml"}, new String[]{});
       if (domainFiles.size() > 0) {
         domainFile = domainFiles.get(0);
         if (domainFiles.size() > 1) {
