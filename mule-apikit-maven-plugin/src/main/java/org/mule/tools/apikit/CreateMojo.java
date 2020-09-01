@@ -169,7 +169,7 @@ public class CreateMojo
         ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
         if (result.isSuccess()) {
-          copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlDirectory);
+          copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlOutputDirectory);
         }
       } catch (Exception e) {
         throw new MojoExecutionException(e.getMessage());
