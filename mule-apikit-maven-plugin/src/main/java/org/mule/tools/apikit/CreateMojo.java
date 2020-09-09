@@ -6,6 +6,7 @@
  */
 package org.mule.tools.apikit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -20,6 +21,7 @@ import org.mule.apikit.model.ApiSpecification;
 import org.mule.apikit.model.api.ApiReference;
 import org.mule.parser.service.ParserService;
 import org.mule.parser.service.result.ParseResult;
+import org.mule.tools.apikit.model.CustomConfiguration;
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
@@ -27,17 +29,21 @@ import org.mule.tools.apikit.model.RuntimeEdition;
 import org.mule.tools.apikit.model.ScaffolderContext;
 import org.mule.tools.apikit.model.ScaffolderContextBuilder;
 import org.mule.tools.apikit.model.ScaffoldingConfiguration;
+import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.mule.tools.apikit.model.ScaffoldingResult;
 import org.sonatype.plexus.build.incremental.BuildContext;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Goal for apikit:create
@@ -111,6 +117,9 @@ public class CreateMojo
   @Parameter(property = "runtimeEdition", defaultValue = "CE")
   private String runtimeEdition;
 
+  @Parameter(property = "scaffoldingConfigurationFile")
+  private File scaffoldingConfigurationFile;
+
   private Log log;
 
   List<String> getIncludedFiles(File sourceDirectory, String[] includes, String[] excludes) {
@@ -149,6 +158,14 @@ public class CreateMojo
 
     log = getLog();
 
+    ObjectMapper mapper = new ObjectMapper();
+    ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
+    try {
+       scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     List<String> specFiles = getIncludedFiles(specDirectory, specIncludes, specExcludes);
     List<String> muleXmlFiles = getIncludedFiles(muleXmlDirectory, muleXmlIncludes, muleXmlExcludes);
     String domainFile = processDomain();
@@ -165,6 +182,12 @@ public class CreateMojo
 
     for (ApiSpecification apiSpecification : apiSpecificationList) {
       try {
+        configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
+        CustomConfiguration customConfiguration = new CustomConfiguration(Optional.ofNullable(scaffoldingConfigurationMojo.getExternalCommonFile()), Optional.empty(),Optional.empty());
+        if(customConfiguration.getExternalConfigurationFile().isPresent() && !customConfiguration.getExternalConfigurationFile().get().endsWith(".xml")){
+          throw new RuntimeException("externalCommonFile must end with .xml");
+        }
+        configurationBuilder.withCustomConfiguration(customConfiguration);
         ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
         ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
