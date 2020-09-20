@@ -15,11 +15,13 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.sonatype.plexus.build.incremental.DefaultBuildContext;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 
@@ -78,6 +80,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
     // TODO mock properties like this:
     setVariableValueToObject(mojo, "buildContext", new DefaultBuildContext());
     setVariableValueToObject(mojo, "log", mock(Log.class));
+    setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration.json").toURI()));
   }
 
   @Test
