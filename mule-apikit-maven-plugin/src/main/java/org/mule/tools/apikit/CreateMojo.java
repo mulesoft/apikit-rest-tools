@@ -7,6 +7,7 @@
 package org.mule.tools.apikit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -143,7 +144,7 @@ public class CreateMojo
     List<MuleConfig> muleConfigs = new ArrayList<>();
     for (String location : muleConfigsPaths) {
       try {
-        muleConfigs.add(MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location))));
+        muleConfigs.add(MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location)), false));
       } catch (Exception e) {
         log.warn(location + " could not be parsed as mule config");
       }
@@ -183,8 +184,9 @@ public class CreateMojo
     for (ApiSpecification apiSpecification : apiSpecificationList) {
       try {
         configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-        CustomConfiguration customConfiguration = new CustomConfiguration(Optional.ofNullable(scaffoldingConfigurationMojo.getExternalCommonFile()), Optional.empty(),Optional.empty());
-        if(customConfiguration.getExternalConfigurationFile().isPresent() && !customConfiguration.getExternalConfigurationFile().get().endsWith(".xml")){
+        CustomConfiguration customConfiguration = new CustomConfiguration(scaffoldingConfigurationMojo.getExternalCommonFile(), null, scaffoldingConfigurationMojo.getApiId());
+
+        if(customConfiguration.getExternalConfigurationFile().isPresent() && !FilenameUtils.getExtension(customConfiguration.getExternalConfigurationFile().get()).equals("xml")){
           throw new RuntimeException("externalCommonFile must end with .xml");
         }
         configurationBuilder.withCustomConfiguration(customConfiguration);
