@@ -22,6 +22,7 @@ import org.mule.apikit.model.ApiSpecification;
 import org.mule.apikit.model.api.ApiReference;
 import org.mule.parser.service.ParserService;
 import org.mule.parser.service.result.ParseResult;
+import org.mule.tools.apikit.model.ConfigurationGroup;
 import org.mule.tools.apikit.model.CustomConfiguration;
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
@@ -29,16 +30,22 @@ import org.mule.tools.apikit.model.MuleDomain;
 import org.mule.tools.apikit.model.RuntimeEdition;
 import org.mule.tools.apikit.model.ScaffolderContext;
 import org.mule.tools.apikit.model.ScaffolderContextBuilder;
+import org.mule.tools.apikit.model.ScaffolderResource;
 import org.mule.tools.apikit.model.ScaffoldingConfiguration;
 import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.mule.tools.apikit.model.ScaffoldingResult;
 import org.sonatype.plexus.build.incremental.BuildContext;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -99,6 +106,12 @@ public class CreateMojo
    */
   @Parameter(defaultValue = "${basedir}/src/main/mule")
   private File muleXmlOutputDirectory;
+
+  /**
+   * Where to output the generated mule config files.
+   */
+  @Parameter(defaultValue = "${basedir}/src/main/resources")
+  private File muleResourcesOutputDirectory;
 
   /**
    * Spec source directory to use as root of muleDomain.
@@ -184,7 +197,11 @@ public class CreateMojo
     for (ApiSpecification apiSpecification : apiSpecificationList) {
       try {
         configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-        CustomConfiguration customConfiguration = new CustomConfiguration(scaffoldingConfigurationMojo.getExternalCommonFile(), null, scaffoldingConfigurationMojo.getApiId());
+        ConfigurationGroup configurationGroup = scaffoldingConfigurationMojo.getConfigurationGroup();
+        if(configurationGroup != null){
+          configurationGroup.setPath(muleResourcesOutputDirectory.getPath());
+        }
+        CustomConfiguration customConfiguration = new CustomConfiguration(scaffoldingConfigurationMojo.getExternalCommonFile(), scaffoldingConfigurationMojo.getApiId(), configurationGroup);
 
         if(customConfiguration.getExternalConfigurationFile().isPresent() && !FilenameUtils.getExtension(customConfiguration.getExternalConfigurationFile().get()).equals("xml")){
           throw new RuntimeException("externalCommonFile must end with .xml");
@@ -195,6 +212,7 @@ public class CreateMojo
 
         if (result.isSuccess()) {
           copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlOutputDirectory);
+          copyGeneratedResources(result.getGeneratedResources(), muleResourcesOutputDirectory);
         }
       } catch (Exception e) {
         throw new MojoExecutionException(e.getMessage());
@@ -224,6 +242,17 @@ public class CreateMojo
       File file = new File(muleXmlDirectory, name);
       try (FileOutputStream stream = new FileOutputStream(file)) {
         IOUtils.copy(generatedConfig.getContent(), stream);
+      }
+    }
+  }
+
+  private static void copyGeneratedResources(List<ScaffolderResource> generatedResources, File muleXmlDirectory) throws IOException {
+    for (ScaffolderResource scaffolderResource : generatedResources) {
+      String name = scaffolderResource.getName();
+      name = StringUtils.isBlank(name) ? "api.xml" : name;
+      File file = new File(muleXmlDirectory, name);
+      try (FileOutputStream stream = new FileOutputStream(file)) {
+        IOUtils.copy(scaffolderResource.getContent(), stream);
       }
     }
   }

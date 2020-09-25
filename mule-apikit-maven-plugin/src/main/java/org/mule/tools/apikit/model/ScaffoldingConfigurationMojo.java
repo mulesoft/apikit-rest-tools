@@ -4,6 +4,15 @@ public class ScaffoldingConfigurationMojo {
     private boolean showConsole;
     private String externalCommonFile;
     private String apiId;
+    private ConfigurationGroup configurationGroup;
+
+    public ConfigurationGroup getConfigurationGroup() {
+        return configurationGroup;
+    }
+
+    public void setConfigurationGroup(ConfigurationGroup configurationGroup) {
+        this.configurationGroup = configurationGroup;
+    }
 
     public boolean isShowConsole() {
         return showConsole;
