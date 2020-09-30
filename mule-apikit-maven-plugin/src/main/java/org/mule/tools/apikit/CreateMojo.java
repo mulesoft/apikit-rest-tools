@@ -199,6 +199,7 @@ public class CreateMojo
                     throw new RuntimeException("externalCommonFile must end with .xml");
                 }
                 configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
+                configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
