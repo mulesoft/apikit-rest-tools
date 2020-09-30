@@ -92,16 +92,16 @@ public class CreateMojoTest extends AbstractMojoTestCase {
         assertEquals(scaffoldingConfigurationMojo.getApiId(), null);
     }
 
-  @Test
-  public void testReadScaffoldingConfigurationMojoFullConfiguration() throws URISyntaxException, IllegalAccessException {
-    setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/full-configuration.json").toURI()));
-    ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
-    assertTrue(scaffoldingConfigurationMojo.isShowConsole());
-    assertEquals(scaffoldingConfigurationMojo.getExternalCommonFile(), "globals.xml");
-    assertEquals(scaffoldingConfigurationMojo.getApiId(), "16356937");
-  }
+    @Test
+    public void testReadScaffoldingConfigurationMojoFullConfiguration() throws URISyntaxException, IllegalAccessException {
+        setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/full-configuration.json").toURI()));
+        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
+        assertTrue(scaffoldingConfigurationMojo.isShowConsole());
+        assertEquals(scaffoldingConfigurationMojo.getExternalCommonFile(), "globals.xml");
+        assertEquals(scaffoldingConfigurationMojo.getApiId(), "16356937");
+    }
 
-  @Test
+    @Test
     public void testGetIncludedFiles() throws Exception {
         List<String> files =
                 mojo.getIncludedFiles(project, new String[]{"src/main/resources/api/**/*.raml", "src/main/resources/api/**/*.yml"},
