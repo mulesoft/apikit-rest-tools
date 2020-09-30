@@ -154,13 +154,7 @@ public class CreateMojo
 
         log = getLog();
 
-        ObjectMapper mapper = new ObjectMapper();
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
-        try {
-            scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = readScaffoldingConfigurationMojo();
 
         List<String> specFiles = getIncludedFiles(specDirectory, specIncludes, specExcludes);
         List<String> muleXmlFiles = getIncludedFiles(muleXmlDirectory, muleXmlIncludes, muleXmlExcludes);
@@ -193,6 +187,17 @@ public class CreateMojo
                 throw new MojoExecutionException(e.getMessage());
             }
         }
+    }
+
+    protected ScaffoldingConfigurationMojo readScaffoldingConfigurationMojo() {
+        ObjectMapper mapper = new ObjectMapper();
+        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
+        try {
+            scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return scaffoldingConfigurationMojo;
     }
 
     private static ScaffoldingConfiguration.Builder getConfigurationBuilder(String
