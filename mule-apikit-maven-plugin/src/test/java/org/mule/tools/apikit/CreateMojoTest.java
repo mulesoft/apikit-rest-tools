@@ -80,6 +80,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
         // TODO mock properties like this:
         setVariableValueToObject(mojo, "buildContext", new DefaultBuildContext());
         setVariableValueToObject(mojo, "log", mock(Log.class));
+        setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/full-configuration.json").toURI()));
     }
 
     @Test
