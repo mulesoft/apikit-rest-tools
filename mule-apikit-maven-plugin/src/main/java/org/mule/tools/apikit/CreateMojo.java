@@ -200,6 +200,7 @@ public class CreateMojo
                 }
                 configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
                 configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
+                configurationBuilder.withConfigurationGroup(scaffoldingConfigurationMojo.getConfigurationGroup());
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
