@@ -14,6 +14,15 @@ public class ScaffoldingConfigurationMojo {
         this.configurationGroup = configurationGroup;
     }
 
+    public ScaffoldingConfigurationMojo(){
+        this.showConsole=true;
+    }
+    public ScaffoldingConfigurationMojo(boolean showConsole, String externalCommonFile, String apiId) {
+        this.showConsole = showConsole;
+        this.externalCommonFile = externalCommonFile;
+        this.apiId = apiId;
+    }
+
     public boolean isShowConsole() {
         return showConsole;
     }
