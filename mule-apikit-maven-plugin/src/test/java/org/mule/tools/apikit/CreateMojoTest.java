@@ -106,7 +106,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
         List<String> files =
                 mojo.getIncludedFiles(project, new String[]{"src/main/resources/api/**/*.raml", "src/main/resources/api/**/*.yml"},
                         new String[]{});
-        HashSet<String> set = new HashSet<String>(files);
+        HashSet<String> set = new HashSet<>(files);
 
         assertTrue(set.contains(new File(project, "src/main/resources/api/hello.raml").getAbsolutePath()));
         assertTrue(set.contains(new File(project, "src/main/resources/api/bye.yml").getAbsolutePath()));
