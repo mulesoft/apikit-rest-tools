@@ -8,11 +8,16 @@ package org.mule.tools.apikit.model;
 
 public class CommonProperties {
 
-    private HttpCommonProperty http;
 
-    public CommonProperties(){}
-    public CommonProperties(HttpCommonProperty http) {
+    private HttpCommonProperty http;
+    private String apiId;
+
+    public CommonProperties() {
+    }
+
+    public CommonProperties(HttpCommonProperty http, String apiId) {
         this.http = http;
+        this.apiId = apiId;
     }
 
     public HttpCommonProperty getHttp() {
@@ -21,5 +26,13 @@ public class CommonProperties {
 
     public void setHttp(HttpCommonProperty http) {
         this.http = http;
+    }
+
+    public String getApiId() {
+        return apiId;
+    }
+
+    public void setApiId(String apiId) {
+        this.apiId = apiId;
     }
 }
