@@ -7,6 +7,7 @@
 package org.mule.tools.apikit;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.junit.Before;
@@ -84,7 +85,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
     }
 
     @Test
-    public void testReadScaffoldingConfigurationMojoEmptyConfiguration() throws URISyntaxException, IllegalAccessException {
+    public void testReadScaffoldingConfigurationMojoEmptyConfiguration() throws URISyntaxException, IllegalAccessException, MojoExecutionException {
         setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/empty-configuration.json").toURI()));
         ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
         assertTrue(scaffoldingConfigurationMojo.isShowConsole());
@@ -93,7 +94,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
     }
 
     @Test
-    public void testReadScaffoldingConfigurationMojoFullConfiguration() throws URISyntaxException, IllegalAccessException {
+    public void testReadScaffoldingConfigurationMojoFullConfiguration() throws URISyntaxException, IllegalAccessException, MojoExecutionException {
         setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/full-configuration.json").toURI()));
         ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
         assertTrue(scaffoldingConfigurationMojo.isShowConsole());
@@ -106,7 +107,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
         List<String> files =
                 mojo.getIncludedFiles(project, new String[]{"src/main/resources/api/**/*.raml", "src/main/resources/api/**/*.yml"},
                         new String[]{});
-        HashSet<String> set = new HashSet<String>(files);
+        HashSet<String> set = new HashSet<>(files);
 
         assertTrue(set.contains(new File(project, "src/main/resources/api/hello.raml").getAbsolutePath()));
         assertTrue(set.contains(new File(project, "src/main/resources/api/bye.yml").getAbsolutePath()));

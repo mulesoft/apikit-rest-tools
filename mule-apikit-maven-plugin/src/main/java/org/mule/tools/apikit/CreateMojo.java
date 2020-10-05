@@ -215,13 +215,13 @@ public class CreateMojo
         }
     }
 
-    protected ScaffoldingConfigurationMojo readScaffoldingConfigurationMojo() {
+    protected ScaffoldingConfigurationMojo readScaffoldingConfigurationMojo() throws MojoExecutionException {
         ObjectMapper mapper = new ObjectMapper();
         ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
         try {
             scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new MojoExecutionException(e.getMessage());
         }
         return scaffoldingConfigurationMojo;
     }
