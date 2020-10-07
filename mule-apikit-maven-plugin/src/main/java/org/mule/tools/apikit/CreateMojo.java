@@ -140,7 +140,7 @@ public class CreateMojo
         List<MuleConfig> muleConfigs = new ArrayList<>();
         for (String location : muleConfigsPaths) {
             try {
-                muleConfigs.add(MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location))));
+                muleConfigs.add(MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location)), false));
             } catch (Exception e) {
                 log.warn(location + " could not be parsed as mule config");
             }
@@ -148,20 +148,13 @@ public class CreateMojo
         return muleConfigs;
     }
 
-
     public void execute() throws MojoExecutionException {
         Validate.notNull(muleXmlDirectory, "Error: muleXmlDirectory parameter cannot be null");
         Validate.notNull(specDirectory, "Error: specDirectory parameter cannot be null");
 
         log = getLog();
 
-        ObjectMapper mapper = new ObjectMapper();
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
-        try {
-            scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = readScaffoldingConfigurationMojo();
 
         List<String> specFiles = getIncludedFiles(specDirectory, specIncludes, specExcludes);
         List<String> muleXmlFiles = getIncludedFiles(muleXmlDirectory, muleXmlIncludes, muleXmlExcludes);
@@ -180,10 +173,11 @@ public class CreateMojo
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
                 configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-                if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")){
+                if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
                     throw new RuntimeException("externalCommonFile must end with .xml");
                 }
                 configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
+                configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
@@ -196,7 +190,19 @@ public class CreateMojo
         }
     }
 
-    private static ScaffoldingConfiguration.Builder getConfigurationBuilder(String domainFile, List<MuleConfig> muleConfigs) throws MojoExecutionException {
+    protected ScaffoldingConfigurationMojo readScaffoldingConfigurationMojo() throws MojoExecutionException {
+        ObjectMapper mapper = new ObjectMapper();
+        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
+        try {
+            scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
+        } catch (IOException e) {
+            throw new MojoExecutionException(e.getMessage());
+        }
+        return scaffoldingConfigurationMojo;
+    }
+
+    private static ScaffoldingConfiguration.Builder getConfigurationBuilder(String
+                                                                                    domainFile, List<MuleConfig> muleConfigs) throws MojoExecutionException {
         ScaffoldingConfiguration.Builder configurationBuilder = new ScaffoldingConfiguration.Builder();
         configurationBuilder.withMuleConfigurations(muleConfigs);
         if (domainFile != null) {
@@ -211,7 +217,8 @@ public class CreateMojo
         return configurationBuilder;
     }
 
-    private static void copyGeneratedConfigs(List<MuleConfig> generatedConfigs, File muleXmlDirectory) throws IOException {
+    private static void copyGeneratedConfigs(List<MuleConfig> generatedConfigs, File muleXmlDirectory) throws
+            IOException {
         for (MuleConfig generatedConfig : generatedConfigs) {
             String name = generatedConfig.getName();
             name = StringUtils.isBlank(name) ? "api.xml" : name;

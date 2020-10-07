@@ -3,6 +3,19 @@ package org.mule.tools.apikit.model;
 public class ScaffoldingConfigurationMojo {
     private boolean showConsole;
     private String externalCommonFile;
+    private String apiId;
+
+    public ScaffoldingConfigurationMojo() {
+        this.showConsole = true;
+        this.externalCommonFile = null;
+        this.apiId = null;
+    }
+
+    public ScaffoldingConfigurationMojo(boolean showConsole, String externalCommonFile, String apiId) {
+        this.showConsole = showConsole;
+        this.externalCommonFile = externalCommonFile;
+        this.apiId = apiId;
+    }
 
     public boolean isShowConsole() {
         return showConsole;
@@ -18,5 +31,13 @@ public class ScaffoldingConfigurationMojo {
 
     public void setExternalCommonFile(String externalCommonFile) {
         this.externalCommonFile = externalCommonFile;
+    }
+
+    public String getApiId() {
+        return apiId;
+    }
+
+    public void setApiId(String apiId) {
+        this.apiId = apiId;
     }
 }
