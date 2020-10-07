@@ -5,9 +5,12 @@ public class ScaffoldingConfigurationMojo {
     private String externalCommonFile;
     private String apiId;
 
-    public ScaffoldingConfigurationMojo(){
-        this.showConsole=true;
+    public ScaffoldingConfigurationMojo() {
+        this.showConsole = true;
+        this.externalCommonFile = null;
+        this.apiId = null;
     }
+
     public ScaffoldingConfigurationMojo(boolean showConsole, String externalCommonFile, String apiId) {
         this.showConsole = showConsole;
         this.externalCommonFile = externalCommonFile;
