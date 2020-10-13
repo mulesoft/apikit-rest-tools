@@ -7,6 +7,7 @@
 package org.mule.tools.apikit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -22,9 +23,8 @@ import org.mule.apikit.model.ApiSpecification;
 import org.mule.apikit.model.api.ApiReference;
 import org.mule.parser.service.ParserService;
 import org.mule.parser.service.result.ParseResult;
+import org.mule.tools.apikit.dependency.DependencyResolver;
 import org.mule.tools.apikit.model.ConfigurationGroup;
-import org.mule.tools.apikit.model.CustomConfiguration;
-
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
@@ -35,16 +35,12 @@ import org.mule.tools.apikit.model.ScaffolderResource;
 import org.mule.tools.apikit.model.ScaffoldingConfiguration;
 import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.mule.tools.apikit.model.ScaffoldingResult;
+import org.mule.tools.apikit.utils.ZipUtils;
 import org.sonatype.plexus.build.incremental.BuildContext;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -61,13 +57,15 @@ public class CreateMojo
     @Component
     private BuildContext buildContext;
 
+    private static String SPEC_FOLDER = "src/main/resources/api";
+
     /**
      * Pattern of where to find the spec .raml, .yaml or .yml files.
      */
     @Parameter
     private String[] specIncludes =
-            new String[]{"src/main/resources/api/**/*.yaml", "src/main/resources/api/**/*.yml", "src/main/resources/api/**/*.raml",
-                    "src/main/resources/api/**/*.json"};
+            new String[]{SPEC_FOLDER + "/**/*.yaml", SPEC_FOLDER + "/**/*.yml", SPEC_FOLDER + "/**/*.raml",
+                    SPEC_FOLDER + "/**/*.json"};
 
     /**
      * Pattern of what to exclude searching for .yaml files.
@@ -124,6 +122,22 @@ public class CreateMojo
     private String minMuleVersion;
 
     /**
+     * Group id of the asset to use to scaffold.
+     */
+    @Parameter(property = "groupId")
+    private String groupId;
+    /**
+     * Artifact of the asset to use to scaffold.
+     */
+    @Parameter(property = "artifact")
+    private String artifact;
+    /**
+     * Version of the asset to use to scaffold.
+     */
+    @Parameter(property = "version")
+    private String version;
+
+    /**
      * Mule runtime edition that is being used.
      */
     @Parameter(property = "runtimeEdition", defaultValue = "CE")
@@ -134,44 +148,12 @@ public class CreateMojo
 
     private Log log;
 
-    List<String> getIncludedFiles(File sourceDirectory, String[] includes, String[] excludes) {
-        Scanner scanner = buildContext.newScanner(sourceDirectory, true);
-        scanner.setIncludes(includes);
-        scanner.setExcludes(excludes);
-        scanner.scan();
-
-        String[] includedFiles = scanner.getIncludedFiles();
-        for (int i = 0; i < includedFiles.length; i++) {
-            includedFiles[i] = new File(scanner.getBasedir(), includedFiles[i]).getAbsolutePath();
-        }
-
-
-        String[] result = new String[includedFiles.length];
-        System.arraycopy(includedFiles, 0, result, 0, includedFiles.length);
-        return Arrays.asList(result);
-    }
-
-
-    private List<MuleConfig> createMuleConfigsFromLocations(List<String> muleConfigsPaths) {
-        List<MuleConfig> muleConfigs = new ArrayList<>();
-        for (String location : muleConfigsPaths) {
-            try {
-                muleConfigs.add(MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location)), false));
-            } catch (Exception e) {
-                log.warn(location + " could not be parsed as mule config");
-            }
-        }
-        return muleConfigs;
-    }
-
     public void execute() throws MojoExecutionException {
         Validate.notNull(muleXmlDirectory, "Error: muleXmlDirectory parameter cannot be null");
         Validate.notNull(specDirectory, "Error: specDirectory parameter cannot be null");
-
         log = getLog();
-
+        prepareFilesToScaffold();
         ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = readScaffoldingConfigurationMojo();
-
         List<String> specFiles = getIncludedFiles(specDirectory, specIncludes, specExcludes);
         List<String> muleXmlFiles = getIncludedFiles(muleXmlDirectory, muleXmlIncludes, muleXmlExcludes);
         String domainFile = processDomain();
@@ -180,7 +162,6 @@ public class CreateMojo
         }
         log.info("Processing the following RAML files: " + specFiles);
         log.info("Processing the following xml files as mule configs: " + muleXmlFiles);
-
         MainAppScaffolder mainAppScaffolder = getMainAppScaffolder();
         List<MuleConfig> muleConfigs = createMuleConfigsFromLocations(muleXmlFiles);
         List<ApiSpecification> apiSpecificationList = getApiSpecifications(specFiles);
@@ -189,7 +170,6 @@ public class CreateMojo
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
                 configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-
                 ConfigurationGroup configurationGroup = scaffoldingConfigurationMojo.getConfigurationGroup();
                 if (configurationGroup != null) {
                     configurationGroup.setPath(muleResourcesOutputDirectory.getPath());
@@ -209,15 +189,45 @@ public class CreateMojo
                     copyGeneratedResources(result.getGeneratedResources(), muleResourcesOutputDirectory);
 
                 }
+                FileUtils.cleanDirectory(new File(SPEC_FOLDER));
             } catch (Exception e) {
                 throw new MojoExecutionException(e.getMessage());
             }
         }
     }
 
+    private void prepareFilesToScaffold() throws MojoExecutionException {
+        if (StringUtils.isNotEmpty(groupId) || StringUtils.isNotEmpty(artifact) || StringUtils.isNotEmpty(version)) {
+            validateGAV();
+            String path = DependencyResolver.resolve(groupId, artifact, version);
+            String fileName = FilenameUtils.getName(path);
+            File source = new File(path);
+            String pathname = FilenameUtils.concat(specDirectory.getAbsolutePath(), SPEC_FOLDER);
+            File destination = new File(pathname);
+            try {
+                FileUtils.copyFileToDirectory(source, destination);
+                ZipUtils.unzip(destination, fileName);
+            } catch (IOException e) {
+                throw new MojoExecutionException(e.getMessage());
+            }
+        }
+    }
+
+    private void validateGAV() throws MojoExecutionException {
+        if (StringUtils.isEmpty(groupId)) {
+            throw new MojoExecutionException("Group id must be specified");
+        }
+        if (StringUtils.isEmpty(artifact)) {
+            throw new MojoExecutionException("Artifact must be specified");
+        }
+        if (StringUtils.isEmpty(version)) {
+            throw new MojoExecutionException("Version must be specified");
+        }
+    }
+
     protected ScaffoldingConfigurationMojo readScaffoldingConfigurationMojo() throws MojoExecutionException {
         ObjectMapper mapper = new ObjectMapper();
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = null;
+        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo;
         try {
             scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
         } catch (IOException e) {
@@ -227,8 +237,7 @@ public class CreateMojo
     }
 
 
-    private static ScaffoldingConfiguration.Builder getConfigurationBuilder(String
-                                                                                    domainFile, List<MuleConfig> muleConfigs) throws MojoExecutionException {
+    private static ScaffoldingConfiguration.Builder getConfigurationBuilder(String domainFile, List<MuleConfig> muleConfigs) throws MojoExecutionException {
         ScaffoldingConfiguration.Builder configurationBuilder = new ScaffoldingConfiguration.Builder();
         configurationBuilder.withMuleConfigurations(muleConfigs);
         if (domainFile != null) {
@@ -303,4 +312,34 @@ public class CreateMojo
         }
         return apiSpecificationList;
     }
+
+
+    List<String> getIncludedFiles(File sourceDirectory, String[] includes, String[] excludes) {
+        Scanner scanner = buildContext.newScanner(sourceDirectory, true);
+        scanner.setIncludes(includes);
+        scanner.setExcludes(excludes);
+        scanner.scan();
+        String[] includedFiles = scanner.getIncludedFiles();
+        for (int i = 0; i < includedFiles.length; i++) {
+            includedFiles[i] = new File(scanner.getBasedir(), includedFiles[i]).getAbsolutePath();
+        }
+        String[] result = new String[includedFiles.length];
+        System.arraycopy(includedFiles, 0, result, 0, includedFiles.length);
+        return Arrays.asList(result);
+    }
+
+    private List<MuleConfig> createMuleConfigsFromLocations(List<String> muleConfigsPaths) {
+        List<MuleConfig> muleConfigs = new ArrayList<>();
+        for (String location : muleConfigsPaths) {
+            try {
+                MuleConfig muleConfig = MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location)), false);
+                muleConfig.setName(org.apache.maven.shared.utils.io.FileUtils.filename(location).split(".xml")[0]);
+                muleConfigs.add(muleConfig);
+            } catch (Exception e) {
+                log.warn(location + " could not be parsed as mule config");
+            }
+        }
+        return muleConfigs;
+    }
+
 }

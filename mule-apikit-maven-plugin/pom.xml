@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.mule.apikit</groupId>
@@ -20,6 +21,7 @@
         <maven.plugin.annotations.version>3.2</maven.plugin.annotations.version>
         <apikit.scaffolder.version>2.1.0-SNAPSHOT</apikit.scaffolder.version>
         <mvn.core.version>3.6.0</mvn.core.version>
+        <mule.maven.client.version>1.5.0</mule.maven.client.version>
 
         <jacoco.version>0.7.9</jacoco.version>
         <allureJunitVersion>2.0-BETA17</allureJunitVersion>
@@ -51,7 +53,16 @@
             <artifactId>maven-core</artifactId>
             <version>${mvn.core.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.mule</groupId>
+            <artifactId>mule-maven-client-impl</artifactId>
+            <version>${mule.maven.client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mule</groupId>
+            <artifactId>mule-maven-client-api</artifactId>
+            <version>${mule.maven.client.version}</version>
+        </dependency>
         <!-- Tests -->
         <dependency>
             <groupId>org.mockito</groupId>
@@ -77,7 +88,6 @@
             <version>${allureJunitVersion}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -92,7 +102,7 @@
                             <ignore>org.mule.tools.apikit.HelpMojo</ignore>
                         </ignores>
                     </instrumentation>
-                    <check />
+                    <check/>
                 </configuration>
             </plugin>
             <plugin>
@@ -135,7 +145,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Dfile.encoding=UTF-8 -javaagent:${settings.localRepository}/org/jacoco/org.jacoco.agent/${jacoco.version}/org.jacoco.agent-${jacoco.version}-runtime.jar=destfile='${session.executionRootDirectory}/target/jacoco.exec'</argLine>
+                    <argLine>-Dfile.encoding=UTF-8
+                        -javaagent:${settings.localRepository}/org/jacoco/org.jacoco.agent/${jacoco.version}/org.jacoco.agent-${jacoco.version}-runtime.jar=destfile='${session.executionRootDirectory}/target/jacoco.exec'
+                    </argLine>
                     <properties>
                         <property>
                             <name>listener</name>
@@ -144,7 +156,8 @@
                     </properties>
                     <systemPropertyVariables>
                         <!-- Just propagate this variable due to surefire will not do this when forked vm for tests -->
-                        <mule.freePortFinder.lockPath>${java.io.tmpdir}/mule/freePortFinder</mule.freePortFinder.lockPath>
+                        <mule.freePortFinder.lockPath>${java.io.tmpdir}/mule/freePortFinder
+                        </mule.freePortFinder.lockPath>
                         <maven.projectVersion>${project.version}</maven.projectVersion>
                     </systemPropertyVariables>
                     <systemProperties>

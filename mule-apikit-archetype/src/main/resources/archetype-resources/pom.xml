@@ -7,7 +7,7 @@
     <artifactId>${meta.prefix}${meta.artifactId}${meta.suffix}</artifactId>
     <version>${meta.prefix}${meta.version}${meta.suffix}</version>
     <packaging>mule-application</packaging>
-    <name>Mule APIKit Application</name>
+    <name>${meta.prefix}${meta.artifactId}${meta.suffix}</name>
 
     <properties>
         <mule.maven.plugin.version>3.2.5</mule.maven.plugin.version>
