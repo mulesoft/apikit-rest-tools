@@ -22,8 +22,6 @@ import org.mule.apikit.model.ApiSpecification;
 import org.mule.apikit.model.api.ApiReference;
 import org.mule.parser.service.ParserService;
 import org.mule.parser.service.result.ParseResult;
-import org.mule.tools.apikit.model.ConfigurationGroup;
-import org.mule.tools.apikit.model.CustomConfiguration;
 
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
@@ -37,14 +35,9 @@ import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.mule.tools.apikit.model.ScaffoldingResult;
 import org.sonatype.plexus.build.incremental.BuildContext;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -190,17 +183,16 @@ public class CreateMojo
             try {
                 configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
 
-                ConfigurationGroup configurationGroup = scaffoldingConfigurationMojo.getConfigurationGroup();
-                if (configurationGroup != null) {
-                    configurationGroup.setPath(muleResourcesOutputDirectory.getPath());
-                }
-
                 if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
-                    throw new RuntimeException("externalCommonFile must end with .xml");
+                    throw new MojoExecutionException("externalCommonFile must end with .xml");
+                }
+                if (StringUtils.isEmpty(scaffoldingConfigurationMojo.getPropertiesFormat()) && scaffoldingConfigurationMojo.getProperties() != null) {
+                    throw new MojoExecutionException("propertiesFormat must be present for properties");
                 }
                 configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
                 configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
-                configurationBuilder.withConfigurationGroup(scaffoldingConfigurationMojo.getConfigurationGroup());
+                configurationBuilder.withPropertiesFormat(scaffoldingConfigurationMojo.getPropertiesFormat());
+                configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 

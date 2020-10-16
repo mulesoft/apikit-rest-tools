@@ -1,18 +1,14 @@
 package org.mule.tools.apikit.model;
 
+import java.util.Map;
+
 public class ScaffoldingConfigurationMojo {
     private boolean showConsole;
     private String externalCommonFile;
     private String apiId;
-    private ConfigurationGroup configurationGroup;
+    private String propertiesFormat;
+    private Map<String, Map<String, Object>> properties;
 
-    public ConfigurationGroup getConfigurationGroup() {
-        return configurationGroup;
-    }
-
-    public void setConfigurationGroup(ConfigurationGroup configurationGroup) {
-        this.configurationGroup = configurationGroup;
-    }
 
     public ScaffoldingConfigurationMojo() {
         this.showConsole = true;
@@ -48,5 +44,21 @@ public class ScaffoldingConfigurationMojo {
 
     public void setApiId(String apiId) {
         this.apiId = apiId;
+    }
+
+    public String getPropertiesFormat() {
+        return propertiesFormat;
+    }
+
+    public void setPropertiesFormat(String propertiesFormat) {
+        this.propertiesFormat = propertiesFormat;
+    }
+
+    public Map<String, Map<String, Object>> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Map<String, Map<String, Object>> properties) {
+        this.properties = properties;
     }
 }
