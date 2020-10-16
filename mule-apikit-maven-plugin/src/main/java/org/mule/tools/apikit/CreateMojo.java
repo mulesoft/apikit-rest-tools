@@ -24,7 +24,7 @@ import org.mule.apikit.model.api.ApiReference;
 import org.mule.parser.service.ParserService;
 import org.mule.parser.service.result.ParseResult;
 import org.mule.tools.apikit.dependency.DependencyResolver;
-import org.mule.tools.apikit.model.ConfigurationGroup;
+
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
@@ -170,17 +170,16 @@ public class CreateMojo
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
                 configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-                ConfigurationGroup configurationGroup = scaffoldingConfigurationMojo.getConfigurationGroup();
-                if (configurationGroup != null) {
-                    configurationGroup.setPath(muleResourcesOutputDirectory.getPath());
-                }
-
                 if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
-                    throw new RuntimeException("externalCommonFile must end with .xml");
+                    throw new MojoExecutionException("externalCommonFile must end with .xml");
+                }
+                if (StringUtils.isEmpty(scaffoldingConfigurationMojo.getPropertiesFormat()) && scaffoldingConfigurationMojo.getProperties() != null) {
+                    throw new MojoExecutionException("propertiesFormat must be present for properties");
                 }
                 configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
                 configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
-                configurationBuilder.withConfigurationGroup(scaffoldingConfigurationMojo.getConfigurationGroup());
+                configurationBuilder.withPropertiesFormat(scaffoldingConfigurationMojo.getPropertiesFormat());
+                configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
