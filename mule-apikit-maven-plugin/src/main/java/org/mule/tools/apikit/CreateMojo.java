@@ -264,6 +264,9 @@ public class CreateMojo
     }
 
     private MainAppScaffolder getMainAppScaffolder() {
+        if (this.runtimeEdition == null) {
+            this.runtimeEdition = "EE";
+        }
         RuntimeEdition muleRuntimeEdition = RuntimeEdition.valueOf(this.runtimeEdition);
         ScaffolderContext context = ScaffolderContextBuilder.builder().withRuntimeEdition(muleRuntimeEdition).build();
         return new MainAppScaffolder(context);

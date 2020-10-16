@@ -10,7 +10,7 @@
     <name>${meta.prefix}${meta.artifactId}${meta.suffix}</name>
 
     <properties>
-        <mule.maven.plugin.version>3.2.5</mule.maven.plugin.version>
+        <mule.maven.plugin.version>3.3.5</mule.maven.plugin.version>
         <mule.http.connector.version>1.5.0</mule.http.connector.version>
     </properties>
     <build>
