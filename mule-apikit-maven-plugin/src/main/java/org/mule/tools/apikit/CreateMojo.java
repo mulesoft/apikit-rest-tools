@@ -7,7 +7,8 @@
 package org.mule.tools.apikit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.io.FileUtils;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -23,8 +24,8 @@ import org.mule.apikit.model.ApiSpecification;
 import org.mule.apikit.model.api.ApiReference;
 import org.mule.parser.service.ParserService;
 import org.mule.parser.service.result.ParseResult;
-import org.mule.tools.apikit.dependency.DependencyResolver;
 
+import org.apache.maven.shared.utils.io.FileUtils;
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
@@ -35,7 +36,7 @@ import org.mule.tools.apikit.model.ScaffolderResource;
 import org.mule.tools.apikit.model.ScaffoldingConfiguration;
 import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.mule.tools.apikit.model.ScaffoldingResult;
-import org.mule.tools.apikit.utils.ZipUtils;
+import org.mule.tools.apikit.utils.ApiSyncResourceLoader;
 import org.sonatype.plexus.build.incremental.BuildContext;
 
 import java.io.File;
@@ -146,81 +147,94 @@ public class CreateMojo
     @Parameter(property = "scaffoldingConfigurationFile")
     private File scaffoldingConfigurationFile;
 
+    public static final String COLON = ":";
+
     private Log log;
 
     public void execute() throws MojoExecutionException {
         Validate.notNull(muleXmlDirectory, "Error: muleXmlDirectory parameter cannot be null");
         Validate.notNull(specDirectory, "Error: specDirectory parameter cannot be null");
+        validateGAV();
         log = getLog();
-        prepareFilesToScaffold();
         ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = readScaffoldingConfigurationMojo();
-        List<String> specFiles = getIncludedFiles(specDirectory, specIncludes, specExcludes);
+        validateExternalCommonFile(scaffoldingConfigurationMojo);
         List<String> muleXmlFiles = getIncludedFiles(muleXmlDirectory, muleXmlIncludes, muleXmlExcludes);
         String domainFile = processDomain();
         if (minMuleVersion != null) {
             log.info("Mule version provided: " + minMuleVersion);
         }
-        log.info("Processing the following RAML files: " + specFiles);
-        log.info("Processing the following xml files as mule configs: " + muleXmlFiles);
         MainAppScaffolder mainAppScaffolder = getMainAppScaffolder();
         List<MuleConfig> muleConfigs = createMuleConfigsFromLocations(muleXmlFiles);
-        List<ApiSpecification> apiSpecificationList = getApiSpecifications(specFiles);
+        List<ApiSpecification> apiSpecificationList = createAPISpecificationList();
         ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
-
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
-                configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-                if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
-                    throw new MojoExecutionException("externalCommonFile must end with .xml");
-                }
                 if (StringUtils.isEmpty(scaffoldingConfigurationMojo.getPropertiesFormat()) && scaffoldingConfigurationMojo.getProperties() != null) {
                     throw new MojoExecutionException("propertiesFormat must be present for properties");
                 }
-                configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
-                configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
-                configurationBuilder.withPropertiesFormat(scaffoldingConfigurationMojo.getPropertiesFormat());
-                configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
-                ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
+                ScaffoldingConfiguration configuration = buildScaffoldingConfiguration(scaffoldingConfigurationMojo, configurationBuilder, apiSpecification);
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 
                 if (result.isSuccess()) {
                     copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlOutputDirectory);
                     copyGeneratedResources(result.getGeneratedResources(), muleResourcesOutputDirectory);
-
                 }
-                FileUtils.cleanDirectory(new File(SPEC_FOLDER));
             } catch (Exception e) {
                 throw new MojoExecutionException(e.getMessage());
             }
         }
     }
 
-    private void prepareFilesToScaffold() throws MojoExecutionException {
-        if (StringUtils.isNotEmpty(groupId) || StringUtils.isNotEmpty(artifact) || StringUtils.isNotEmpty(version)) {
-            validateGAV();
-            String path = DependencyResolver.resolve(groupId, artifact, version);
-            String fileName = FilenameUtils.getName(path);
-            File source = new File(path);
-            String pathname = FilenameUtils.concat(specDirectory.getAbsolutePath(), SPEC_FOLDER);
-            File destination = new File(pathname);
-            try {
-                FileUtils.copyFileToDirectory(source, destination);
-                ZipUtils.unzip(destination, fileName);
-            } catch (IOException e) {
-                throw new MojoExecutionException(e.getMessage());
-            }
+    private ScaffoldingConfiguration buildScaffoldingConfiguration(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo, ScaffoldingConfiguration.Builder configurationBuilder, ApiSpecification apiSpecification) {
+        configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
+        configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
+        configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
+        configurationBuilder.withPropertiesFormat(scaffoldingConfigurationMojo.getPropertiesFormat());
+        configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
+        configurationBuilder.withApiSyncResource(hasDependency() ? createResourceForApiSync() : null);
+        return configurationBuilder.withApi(apiSpecification).build();
+    }
+
+    private void validateExternalCommonFile(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo) throws MojoExecutionException {
+        if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
+            throw new MojoExecutionException("externalCommonFile must end with .xml");
         }
     }
 
+    private List<ApiSpecification> createAPISpecificationList() {
+        List<ApiSpecification> apiSpecificationList = new ArrayList<>();
+        if (hasDependency()) {
+            String apiSyncPath = createResourceForApiSync();
+            ApiReference apiReference = ApiReference.create(apiSyncPath, new ApiSyncResourceLoader());
+            ParseResult parseResult = new ParserService().parse(apiReference);
+            apiSpecificationList.add(parseResult.get());
+        } else {
+            List<String> specFiles = getIncludedFiles(specDirectory, specIncludes, specExcludes);
+            log.info("Processing the following RAML files: " + specFiles);
+            apiSpecificationList = getApiSpecifications(specFiles);
+        }
+        return apiSpecificationList;
+    }
+
+    private boolean hasDependency() {
+        return StringUtils.isNotEmpty(groupId) && StringUtils.isNotEmpty(artifact) && StringUtils.isNotEmpty(version);
+    }
+
+    private String createResourceForApiSync() {
+        return "resource::".concat(groupId).concat(COLON).concat(artifact).concat(COLON)
+                .concat(version).concat(COLON).concat("raml").concat(COLON).concat("zip")
+                .concat(COLON).concat(artifact).concat(".raml");
+    }
+
+
     private void validateGAV() throws MojoExecutionException {
-        if (StringUtils.isEmpty(groupId)) {
-            throw new MojoExecutionException("Group id must be specified");
-        }
-        if (StringUtils.isEmpty(artifact)) {
-            throw new MojoExecutionException("Artifact must be specified");
-        }
-        if (StringUtils.isEmpty(version)) {
-            throw new MojoExecutionException("Version must be specified");
+        List<String> gavElements = new ArrayList<>();
+        gavElements.add(groupId);
+        gavElements.add(artifact);
+        gavElements.add(version);
+        Iterables.removeIf(gavElements, Predicates.isNull());
+        if (gavElements.size() > 0 && gavElements.size() < 3) {
+            throw new MojoExecutionException("Any argument from the groupId-artifact-version is missing.");
         }
     }
 
@@ -307,7 +321,6 @@ public class CreateMojo
         for (String specFile : specFiles) {
             ApiReference apiReference = ApiReference.create(Paths.get(specFile).toUri());
             ParseResult parseResult = new ParserService().parse(apiReference);
-
             if (parseResult.success()) {
                 apiSpecificationList.add(parseResult.get());
             }
@@ -335,7 +348,7 @@ public class CreateMojo
         for (String location : muleConfigsPaths) {
             try {
                 MuleConfig muleConfig = MuleConfigBuilder.fromStream(Files.newInputStream(Paths.get(location)), false);
-                muleConfig.setName(org.apache.maven.shared.utils.io.FileUtils.filename(location).split(".xml")[0]);
+                muleConfig.setName(FileUtils.filename(location));
                 muleConfigs.add(muleConfig);
             } catch (Exception e) {
                 log.warn(location + " could not be parsed as mule config");
