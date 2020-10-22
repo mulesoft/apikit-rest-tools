@@ -7,7 +7,7 @@
             <defaultValue>4.0.0</defaultValue>
         </requiredProperty>
         <requiredProperty key="runtimeEdition">
-            <defaultValue>CE</defaultValue>
+            <defaultValue>EE</defaultValue>
         </requiredProperty>
         <requiredProperty key="sharedHttpListener">
             <defaultValue>empty</defaultValue>
@@ -17,6 +17,12 @@
         </requiredProperty>
         <requiredProperty key="lightweightPackage">
             <defaultValue>false</defaultValue>
+        </requiredProperty>
+        <requiredProperty key="organizationId">
+            <defaultValue></defaultValue>
+        </requiredProperty>
+        <requiredProperty key="dependencyVersion">
+            <defaultValue></defaultValue>
         </requiredProperty>
     </requiredProperties>
     <fileSets>

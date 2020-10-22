@@ -141,7 +141,7 @@ public class CreateMojo
     /**
      * Mule runtime edition that is being used.
      */
-    @Parameter(property = "runtimeEdition", defaultValue = "CE")
+    @Parameter(property = "runtimeEdition", defaultValue = "EE")
     private String runtimeEdition;
 
     @Parameter(property = "scaffoldingConfigurationFile")
@@ -278,9 +278,6 @@ public class CreateMojo
     }
 
     private MainAppScaffolder getMainAppScaffolder() {
-        if (this.runtimeEdition == null) {
-            this.runtimeEdition = "EE";
-        }
         RuntimeEdition muleRuntimeEdition = RuntimeEdition.valueOf(this.runtimeEdition);
         ScaffolderContext context = ScaffolderContextBuilder.builder().withRuntimeEdition(muleRuntimeEdition).build();
         return new MainAppScaffolder(context);

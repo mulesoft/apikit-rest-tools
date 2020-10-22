@@ -10,11 +10,20 @@
     <name>${meta.prefix}${meta.artifactId}${meta.suffix}</name>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <app.runtime>4.3.0</app.runtime>
         <mule.maven.plugin.version>3.3.5</mule.maven.plugin.version>
-        <mule.http.connector.version>1.5.0</mule.http.connector.version>
     </properties>
+
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+            </plugin>
             <plugin>
                 <groupId>org.mule.tools.maven</groupId>
                 <artifactId>mule-maven-plugin</artifactId>
@@ -29,31 +38,45 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-http-connector</artifactId>
+            <classifier>mule-plugin</classifier>
+            <version>1.5.19</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-sockets-connector</artifactId>
+            <version>1.2.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+#if ( ${organizationId.isEmpty()}==false and ${dependencyVersion.isEmpty()}==false )
+        <dependency>
+            <groupId>${organizationId}</groupId>
+            <artifactId>${meta.prefix}${meta.artifactId}${meta.suffix}</artifactId>
+            <version>${dependencyVersion}</version>
+            <classifier>raml</classifier>
+            <type>zip</type>
+        </dependency>
+#end
+        <dependency>
             <groupId>org.mule.modules</groupId>
             <artifactId>mule-apikit-module</artifactId>
             <version>${project.version}</version>
             <classifier>mule-plugin</classifier>
         </dependency>
-
-        <dependency>
-            <groupId>org.mule.connectors</groupId>
-            <artifactId>mule-http-connector</artifactId>
-            <classifier>mule-plugin</classifier>
-            <version>${mule.http.connector.version}</version>
-        </dependency>
     </dependencies>
 
     <repositories>
         <repository>
-            <id>mule-releases</id>
-            <name>MuleSoft Releases Repository</name>
-            <url>https://repository.mulesoft.org/releases/</url>
+            <id>anypoint-exchange-v2</id>
+            <name>Anypoint Exchange</name>
+            <url>https://maven.anypoint.mulesoft.com/api/v2/maven</url>
             <layout>default</layout>
         </repository>
         <repository>
-            <id>mule-snapshots</id>
-            <name>MuleSoft Snapshots Repository</name>
-            <url>https://repository.mulesoft.org/snapshots/</url>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
             <layout>default</layout>
         </repository>
     </repositories>
@@ -62,16 +85,10 @@
             <id>mulesoft-releases</id>
             <name>mulesoft release repository</name>
             <layout>default</layout>
-            <url>http://repository.mulesoft.org/releases/</url>
+            <url>https://repository.mulesoft.org/releases/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>mulesoft-snapshots</id>
-            <name>mulesoft snapshots repository</name>
-            <layout>default</layout>
-            <url>http://repository.mulesoft.org/snapshots/</url>
         </pluginRepository>
     </pluginRepositories>
 </project>
