@@ -29,6 +29,7 @@ import org.apache.maven.shared.utils.io.FileUtils;
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
+import org.mule.tools.apikit.model.Properties;
 import org.mule.tools.apikit.model.RuntimeEdition;
 import org.mule.tools.apikit.model.ScaffolderContext;
 import org.mule.tools.apikit.model.ScaffolderContextBuilder;
@@ -169,12 +170,9 @@ public class CreateMojo
         ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
-                if (StringUtils.isEmpty(scaffoldingConfigurationMojo.getPropertiesFormat()) && scaffoldingConfigurationMojo.getProperties() != null) {
-                    throw new MojoExecutionException("propertiesFormat must be present for properties");
-                }
                 ScaffoldingConfiguration configuration = buildScaffoldingConfiguration(scaffoldingConfigurationMojo, configurationBuilder, apiSpecification);
+                validateProperties(scaffoldingConfigurationMojo);
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
-
                 if (result.isSuccess()) {
                     copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlOutputDirectory);
                     copyGeneratedResources(result.getGeneratedResources(), muleResourcesOutputDirectory);
@@ -185,11 +183,17 @@ public class CreateMojo
         }
     }
 
+    private void validateProperties(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo) throws MojoExecutionException {
+        Properties properties = scaffoldingConfigurationMojo.getProperties();
+        if (properties != null && (StringUtils.isEmpty(properties.getFormat()) || properties.getFiles() == null)) {
+            throw new MojoExecutionException("format and files must be present for properties");
+        }
+    }
+
     private ScaffoldingConfiguration buildScaffoldingConfiguration(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo, ScaffoldingConfiguration.Builder configurationBuilder, ApiSpecification apiSpecification) {
         configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
         configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
         configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
-        configurationBuilder.withPropertiesFormat(scaffoldingConfigurationMojo.getPropertiesFormat());
         configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
         configurationBuilder.withApiSyncResource(hasDependency() ? createResourceForApiSync() : null);
         return configurationBuilder.withApi(apiSpecification).build();

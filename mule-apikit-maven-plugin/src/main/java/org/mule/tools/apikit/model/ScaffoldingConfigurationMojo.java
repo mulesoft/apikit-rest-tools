@@ -6,21 +6,16 @@
  */
 package org.mule.tools.apikit.model;
 
-import java.util.Map;
-
 public class ScaffoldingConfigurationMojo {
     private boolean showConsole;
     private String externalCommonFile;
     private String apiId;
-    private String propertiesFormat;
-    private Map<String, Map<String, Object>> properties;
-
+    private Properties properties;
 
     public ScaffoldingConfigurationMojo() {
         this.showConsole = true;
         this.externalCommonFile = null;
         this.apiId = null;
-        this.propertiesFormat = null;
         this.properties = null;
     }
 
@@ -36,11 +31,11 @@ public class ScaffoldingConfigurationMojo {
         return apiId;
     }
 
-    public String getPropertiesFormat() {
-        return propertiesFormat;
+    public Properties getProperties() {
+        return properties;
     }
 
-    public Map<String, Map<String, Object>> getProperties() {
-        return properties;
+    public void setProperties(Properties properties) {
+        this.properties = properties;
     }
 }
