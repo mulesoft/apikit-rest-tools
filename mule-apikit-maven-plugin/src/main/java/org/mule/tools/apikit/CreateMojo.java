@@ -26,6 +26,7 @@ import org.mule.parser.service.result.ParseResult;
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
+import org.mule.tools.apikit.model.Properties;
 import org.mule.tools.apikit.model.RuntimeEdition;
 import org.mule.tools.apikit.model.ScaffolderContext;
 import org.mule.tools.apikit.model.ScaffolderContextBuilder;
@@ -186,13 +187,13 @@ public class CreateMojo
                 if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
                     throw new MojoExecutionException("externalCommonFile must end with .xml");
                 }
-                if (StringUtils.isEmpty(scaffoldingConfigurationMojo.getPropertiesFormat()) && scaffoldingConfigurationMojo.getProperties() != null) {
+                Properties properties = scaffoldingConfigurationMojo.getProperties();
+                if (properties != null && StringUtils.isEmpty(properties.getFormat()) && properties != null) {
                     throw new MojoExecutionException("propertiesFormat must be present for properties");
                 }
                 configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
                 configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
-                configurationBuilder.withPropertiesFormat(scaffoldingConfigurationMojo.getPropertiesFormat());
-                configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
+                configurationBuilder.withProperties(properties);
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
 

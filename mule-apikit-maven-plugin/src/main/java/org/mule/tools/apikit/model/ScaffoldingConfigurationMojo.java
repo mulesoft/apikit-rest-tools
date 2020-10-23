@@ -6,9 +6,7 @@ public class ScaffoldingConfigurationMojo {
     private boolean showConsole;
     private String externalCommonFile;
     private String apiId;
-    private String propertiesFormat;
-    private Map<String, Map<String, Object>> properties;
-
+    private Properties properties;
 
     public ScaffoldingConfigurationMojo() {
         this.showConsole = true;
@@ -46,19 +44,11 @@ public class ScaffoldingConfigurationMojo {
         this.apiId = apiId;
     }
 
-    public String getPropertiesFormat() {
-        return propertiesFormat;
-    }
-
-    public void setPropertiesFormat(String propertiesFormat) {
-        this.propertiesFormat = propertiesFormat;
-    }
-
-    public Map<String, Map<String, Object>> getProperties() {
+    public Properties getProperties() {
         return properties;
     }
 
-    public void setProperties(Map<String, Map<String, Object>> properties) {
+    public void setProperties(Properties properties) {
         this.properties = properties;
     }
 }
