@@ -11,7 +11,6 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -48,6 +47,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isEmpty;
+import static org.apache.commons.lang.StringUtils.isNotEmpty;
 
 /**
  * Goal for apikit:create
@@ -167,10 +170,10 @@ public class CreateMojo
         MainAppScaffolder mainAppScaffolder = getMainAppScaffolder();
         List<MuleConfig> muleConfigs = createMuleConfigsFromLocations(muleXmlFiles);
         List<ApiSpecification> apiSpecificationList = createAPISpecificationList();
-        ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
+        ScaffoldingConfiguration.Builder configurationBuilder = createBuilder(scaffoldingAccessories, domainFile, muleConfigs);
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
-                ScaffoldingConfiguration configuration = buildScaffoldingConfiguration(scaffoldingAccessories, configurationBuilder, apiSpecification);
+                ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 validateProperties(scaffoldingAccessories);
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
                 if (result.isSuccess()) {
@@ -183,21 +186,23 @@ public class CreateMojo
         }
     }
 
+    private ScaffoldingConfiguration.Builder createBuilder(ScaffoldingAccessories scaffoldingAccessories, String domainFile, List<MuleConfig> muleConfigs) throws MojoExecutionException {
+        ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
+        String apiSyncResource = hasDependency() ? createResourceForApiSync() : null;
+        configurationBuilder.withApiSyncResource(apiSyncResource);
+        configurationBuilder.withAccessories(scaffoldingAccessories);
+        return configurationBuilder;
+    }
+
     private void validateProperties(ScaffoldingAccessories scaffoldingAccessories) throws MojoExecutionException {
         Properties properties = scaffoldingAccessories.getProperties();
-        if (properties != null && (StringUtils.isEmpty(properties.getFormat()) || properties.getFiles() == null)) {
+        if (properties != null && (isEmpty(properties.getFormat()) || properties.getFiles() == null)) {
             throw new MojoExecutionException("format and files must be present for properties");
         }
     }
 
-    private ScaffoldingConfiguration buildScaffoldingConfiguration(ScaffoldingAccessories scaffoldingAccessories, ScaffoldingConfiguration.Builder configurationBuilder, ApiSpecification apiSpecification) {
-        configurationBuilder.withApiSyncResource(hasDependency() ? createResourceForApiSync() : null);
-        configurationBuilder.withAccessories(scaffoldingAccessories);
-        return configurationBuilder.withApi(apiSpecification).build();
-    }
-
     private void validateExternalCommonFile(ScaffoldingAccessories scaffoldingAccessories) throws MojoExecutionException {
-        if (StringUtils.isNotEmpty(scaffoldingAccessories.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingAccessories.getExternalCommonFile()).equals("xml")) {
+        if (isNotEmpty(scaffoldingAccessories.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingAccessories.getExternalCommonFile()).equals("xml")) {
             throw new MojoExecutionException("externalCommonFile must end with .xml");
         }
     }
@@ -218,7 +223,7 @@ public class CreateMojo
     }
 
     private boolean hasDependency() {
-        return StringUtils.isNotEmpty(groupId) && StringUtils.isNotEmpty(artifact) && StringUtils.isNotEmpty(version);
+        return isNotEmpty(groupId) && isNotEmpty(artifact) && isNotEmpty(version);
     }
 
     private String createResourceForApiSync() {
@@ -255,13 +260,12 @@ public class CreateMojo
         ScaffoldingConfiguration.Builder configurationBuilder = new ScaffoldingConfiguration.Builder();
         configurationBuilder.withMuleConfigurations(muleConfigs);
         if (domainFile != null) {
-            MuleDomain muleDomain;
             try {
-                muleDomain = MuleDomain.fromInputStream(Files.newInputStream(Paths.get(domainFile)));
+                MuleDomain muleDomain = MuleDomain.fromInputStream(Files.newInputStream(Paths.get(domainFile)));
+                configurationBuilder.withDomain(muleDomain);
             } catch (Exception e) {
                 throw new MojoExecutionException(e.getMessage());
             }
-            configurationBuilder.withDomain(muleDomain);
         }
         return configurationBuilder;
     }
@@ -270,7 +274,7 @@ public class CreateMojo
             IOException {
         for (MuleConfig generatedConfig : generatedConfigs) {
             String name = generatedConfig.getName();
-            name = StringUtils.isBlank(name) ? "api.xml" : name;
+            name = isBlank(name) ? "api.xml" : name;
             File file = new File(muleXmlDirectory, name);
             try (FileOutputStream stream = new FileOutputStream(file)) {
                 IOUtils.copy(generatedConfig.getContent(), stream);
@@ -287,7 +291,7 @@ public class CreateMojo
     private static void copyGeneratedResources(List<ScaffolderResource> generatedResources, File muleXmlDirectory) throws IOException {
         for (ScaffolderResource scaffolderResource : generatedResources) {
             String name = scaffolderResource.getName();
-            name = StringUtils.isBlank(name) ? "api.xml" : name;
+            name = isBlank(name) ? "api.xml" : name;
             File file = new File(muleXmlDirectory, name);
             try (FileOutputStream stream = new FileOutputStream(file)) {
                 IOUtils.copy(scaffolderResource.getContent(), stream);
