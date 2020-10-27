@@ -34,8 +34,8 @@ import org.mule.tools.apikit.model.RuntimeEdition;
 import org.mule.tools.apikit.model.ScaffolderContext;
 import org.mule.tools.apikit.model.ScaffolderContextBuilder;
 import org.mule.tools.apikit.model.ScaffolderResource;
+import org.mule.tools.apikit.model.ScaffoldingAccessories;
 import org.mule.tools.apikit.model.ScaffoldingConfiguration;
-import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
 import org.mule.tools.apikit.model.ScaffoldingResult;
 import org.mule.tools.apikit.utils.ApiSyncResourceLoader;
 import org.sonatype.plexus.build.incremental.BuildContext;
@@ -157,8 +157,8 @@ public class CreateMojo
         Validate.notNull(specDirectory, "Error: specDirectory parameter cannot be null");
         validateGAV();
         log = getLog();
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = readScaffoldingConfigurationMojo();
-        validateExternalCommonFile(scaffoldingConfigurationMojo);
+        ScaffoldingAccessories scaffoldingAccessories = readScaffoldingConfigurationMojo();
+        validateExternalCommonFile(scaffoldingAccessories);
         List<String> muleXmlFiles = getIncludedFiles(muleXmlDirectory, muleXmlIncludes, muleXmlExcludes);
         String domainFile = processDomain();
         if (minMuleVersion != null) {
@@ -170,8 +170,8 @@ public class CreateMojo
         ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
         for (ApiSpecification apiSpecification : apiSpecificationList) {
             try {
-                ScaffoldingConfiguration configuration = buildScaffoldingConfiguration(scaffoldingConfigurationMojo, configurationBuilder, apiSpecification);
-                validateProperties(scaffoldingConfigurationMojo);
+                ScaffoldingConfiguration configuration = buildScaffoldingConfiguration(scaffoldingAccessories, configurationBuilder, apiSpecification);
+                validateProperties(scaffoldingAccessories);
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
                 if (result.isSuccess()) {
                     copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlOutputDirectory);
@@ -183,24 +183,21 @@ public class CreateMojo
         }
     }
 
-    private void validateProperties(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo) throws MojoExecutionException {
-        Properties properties = scaffoldingConfigurationMojo.getProperties();
+    private void validateProperties(ScaffoldingAccessories scaffoldingAccessories) throws MojoExecutionException {
+        Properties properties = scaffoldingAccessories.getProperties();
         if (properties != null && (StringUtils.isEmpty(properties.getFormat()) || properties.getFiles() == null)) {
             throw new MojoExecutionException("format and files must be present for properties");
         }
     }
 
-    private ScaffoldingConfiguration buildScaffoldingConfiguration(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo, ScaffoldingConfiguration.Builder configurationBuilder, ApiSpecification apiSpecification) {
-        configurationBuilder.withShowConsole(scaffoldingConfigurationMojo.isShowConsole());
-        configurationBuilder.withExternalConfigurationFile(scaffoldingConfigurationMojo.getExternalCommonFile());
-        configurationBuilder.withApiAutodiscoveryId(scaffoldingConfigurationMojo.getApiId());
-        configurationBuilder.withProperties(scaffoldingConfigurationMojo.getProperties());
+    private ScaffoldingConfiguration buildScaffoldingConfiguration(ScaffoldingAccessories scaffoldingAccessories, ScaffoldingConfiguration.Builder configurationBuilder, ApiSpecification apiSpecification) {
         configurationBuilder.withApiSyncResource(hasDependency() ? createResourceForApiSync() : null);
+        configurationBuilder.withAccessories(scaffoldingAccessories);
         return configurationBuilder.withApi(apiSpecification).build();
     }
 
-    private void validateExternalCommonFile(ScaffoldingConfigurationMojo scaffoldingConfigurationMojo) throws MojoExecutionException {
-        if (StringUtils.isNotEmpty(scaffoldingConfigurationMojo.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingConfigurationMojo.getExternalCommonFile()).equals("xml")) {
+    private void validateExternalCommonFile(ScaffoldingAccessories scaffoldingAccessories) throws MojoExecutionException {
+        if (StringUtils.isNotEmpty(scaffoldingAccessories.getExternalCommonFile()) && !FilenameUtils.getExtension(scaffoldingAccessories.getExternalCommonFile()).equals("xml")) {
             throw new MojoExecutionException("externalCommonFile must end with .xml");
         }
     }
@@ -242,11 +239,11 @@ public class CreateMojo
         }
     }
 
-    protected ScaffoldingConfigurationMojo readScaffoldingConfigurationMojo() throws MojoExecutionException {
+    protected ScaffoldingAccessories readScaffoldingConfigurationMojo() throws MojoExecutionException {
         ObjectMapper mapper = new ObjectMapper();
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo;
+        ScaffoldingAccessories scaffoldingConfigurationMojo;
         try {
-            scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingConfigurationMojo.class);
+            scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingAccessories.class);
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage());
         }

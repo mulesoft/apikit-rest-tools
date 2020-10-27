@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mule.tools.apikit.model.ScaffoldingConfigurationMojo;
+import org.mule.tools.apikit.model.ScaffoldingAccessories;
 import org.sonatype.plexus.build.incremental.DefaultBuildContext;
 
 import java.io.File;
@@ -87,7 +87,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
     @Test
     public void testReadScaffoldingConfigurationMojoEmptyConfiguration() throws URISyntaxException, IllegalAccessException, MojoExecutionException {
         setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/empty-configuration.json").toURI()));
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
+        ScaffoldingAccessories scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
         assertTrue(scaffoldingConfigurationMojo.isShowConsole());
         assertEquals(scaffoldingConfigurationMojo.getExternalCommonFile(), null);
         assertEquals(scaffoldingConfigurationMojo.getApiId(), null);
@@ -96,7 +96,7 @@ public class CreateMojoTest extends AbstractMojoTestCase {
     @Test
     public void testReadScaffoldingConfigurationMojoFullConfiguration() throws URISyntaxException, IllegalAccessException, MojoExecutionException {
         setVariableValueToObject(mojo, "scaffoldingConfigurationFile", new File(this.getClass().getClassLoader().getResource("configuration/full-configuration.json").toURI()));
-        ScaffoldingConfigurationMojo scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
+        ScaffoldingAccessories scaffoldingConfigurationMojo = mojo.readScaffoldingConfigurationMojo();
         assertTrue(scaffoldingConfigurationMojo.isShowConsole());
         assertEquals(scaffoldingConfigurationMojo.getExternalCommonFile(), "globals.xml");
         assertEquals(scaffoldingConfigurationMojo.getApiId(), "16356937");
