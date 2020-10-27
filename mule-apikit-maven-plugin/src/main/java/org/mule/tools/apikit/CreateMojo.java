@@ -28,6 +28,7 @@ import org.apache.maven.shared.utils.io.FileUtils;
 import org.mule.tools.apikit.model.MuleConfig;
 import org.mule.tools.apikit.model.MuleConfigBuilder;
 import org.mule.tools.apikit.model.MuleDomain;
+import org.mule.tools.apikit.model.NamedContent;
 import org.mule.tools.apikit.model.Properties;
 import org.mule.tools.apikit.model.RuntimeEdition;
 import org.mule.tools.apikit.model.ScaffolderContext;
@@ -177,8 +178,8 @@ public class CreateMojo
                 validateProperties(scaffoldingAccessories);
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
                 if (result.isSuccess()) {
-                    copyGeneratedConfigs(result.getGeneratedConfigs(), muleXmlOutputDirectory);
-                    copyGeneratedResources(result.getGeneratedResources(), muleResourcesOutputDirectory);
+                    copyGeneratedNamedContents(result.getGeneratedConfigs(), muleXmlOutputDirectory);
+                    copyGeneratedNamedContents(result.getGeneratedResources(), muleResourcesOutputDirectory);
                 }
             } catch (Exception e) {
                 throw new MojoExecutionException(e.getMessage());
@@ -270,14 +271,14 @@ public class CreateMojo
         return configurationBuilder;
     }
 
-    private static void copyGeneratedConfigs(List<MuleConfig> generatedConfigs, File muleXmlDirectory) throws
+    private static <T extends NamedContent> void copyGeneratedNamedContents(List<T> generatedNamedContents, File muleXmlDirectory) throws
             IOException {
-        for (MuleConfig generatedConfig : generatedConfigs) {
-            String name = generatedConfig.getName();
+        for (T generatedNamedContent : generatedNamedContents) {
+            String name = generatedNamedContent.getName();
             name = isBlank(name) ? "api.xml" : name;
             File file = new File(muleXmlDirectory, name);
             try (FileOutputStream stream = new FileOutputStream(file)) {
-                IOUtils.copy(generatedConfig.getContent(), stream);
+                IOUtils.copy(generatedNamedContent.getContent(), stream);
             }
         }
     }
@@ -286,17 +287,6 @@ public class CreateMojo
         RuntimeEdition muleRuntimeEdition = RuntimeEdition.valueOf(this.runtimeEdition);
         ScaffolderContext context = ScaffolderContextBuilder.builder().withRuntimeEdition(muleRuntimeEdition).build();
         return new MainAppScaffolder(context);
-    }
-
-    private static void copyGeneratedResources(List<ScaffolderResource> generatedResources, File muleXmlDirectory) throws IOException {
-        for (ScaffolderResource scaffolderResource : generatedResources) {
-            String name = scaffolderResource.getName();
-            name = isBlank(name) ? "api.xml" : name;
-            File file = new File(muleXmlDirectory, name);
-            try (FileOutputStream stream = new FileOutputStream(file)) {
-                IOUtils.copy(scaffolderResource.getContent(), stream);
-            }
-        }
     }
 
     private String processDomain() {
