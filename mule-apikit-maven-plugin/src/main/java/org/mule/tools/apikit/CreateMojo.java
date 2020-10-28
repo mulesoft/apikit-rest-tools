@@ -177,6 +177,9 @@ public class CreateMojo
                 ScaffoldingConfiguration configuration = configurationBuilder.withApi(apiSpecification).build();
                 validateProperties(scaffoldingAccessories);
                 ScaffoldingResult result = mainAppScaffolder.run(configuration);
+                if (result.getErrors().size() > 0) {
+                    throw new MojoExecutionException(result.getErrors().stream().findFirst().get().getReason());
+                }
                 if (result.isSuccess()) {
                     copyGeneratedNamedContents(result.getGeneratedConfigs(), muleXmlOutputDirectory);
                     copyGeneratedNamedContents(result.getGeneratedResources(), muleResourcesOutputDirectory);
