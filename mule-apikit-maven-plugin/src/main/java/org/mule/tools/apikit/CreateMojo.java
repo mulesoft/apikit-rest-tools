@@ -194,7 +194,10 @@ public class CreateMojo
         ScaffoldingConfiguration.Builder configurationBuilder = getConfigurationBuilder(domainFile, muleConfigs);
         String apiSyncResource = hasDependency() ? createResourceForApiSync() : null;
         configurationBuilder.withApiSyncResource(apiSyncResource);
-        configurationBuilder.withAccessories(scaffoldingAccessories);
+        configurationBuilder.withExternalCommonFile(scaffoldingAccessories.getExternalCommonFile());
+        configurationBuilder.withApiId(scaffoldingAccessories.getApiId());
+        configurationBuilder.withProperties(scaffoldingAccessories.getProperties());
+        configurationBuilder.withShowConsole(scaffoldingAccessories.isShowConsole());
         return configurationBuilder;
     }
 
