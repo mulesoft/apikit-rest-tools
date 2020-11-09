@@ -1,22 +1,3 @@
 {
-  "name": "${meta.prefix}${meta.artifactId}${meta.suffix}",
-  "minMuleVersion": "${minMuleVersion}",
-  "requiredProduct": "MULE",
-  "classLoaderModelLoaderDescriptor": {
-    "id": "mule",
-    "attributes": {
-      "exportedPackages": [],
-      "exportedResources": [
-        "api/api.raml"
-      ]
-    }
-  },
-  "bundleDescriptorLoader": {
-    "id": "mule",
-    "attributes": {}
-  },
-  "configs": [
-    "mule-config.xml"
-  ],
-  "domain": "${domainName}"
+  "minMuleVersion": "4.3.0"
 }
