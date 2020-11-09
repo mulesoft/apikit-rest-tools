@@ -21,7 +21,7 @@
         <apikit.scaffolder.version>1.3.0</apikit.scaffolder.version>
         <mvn.core.version>3.6.0</mvn.core.version>
 
-        <jacoco.version>0.7.9</jacoco.version>
+        <jacoco.version>0.8.5</jacoco.version>
         <allureJunitVersion>2.0-BETA17</allureJunitVersion>
         <allureReportVersion>2.3.4</allureReportVersion>
         <allure.maven.plugin.version>2.8</allure.maven.plugin.version>
