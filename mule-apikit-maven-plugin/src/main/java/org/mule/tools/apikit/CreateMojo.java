@@ -253,6 +253,7 @@ public class CreateMojo
 
     protected ScaffoldingAccessories readScaffoldingConfigurationMojo() throws MojoExecutionException {
         ObjectMapper mapper = new ObjectMapper();
+        mapper.disableDefaultTyping();
         ScaffoldingAccessories scaffoldingConfigurationMojo;
         try {
             scaffoldingConfigurationMojo = mapper.readValue(scaffoldingConfigurationFile, ScaffoldingAccessories.class);
