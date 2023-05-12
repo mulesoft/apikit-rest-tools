@@ -19,7 +19,7 @@
         <plexus.build.api.version>0.0.7</plexus.build.api.version>
         <maven.plugin.annotations.version>3.2</maven.plugin.annotations.version>
         <apikit.scaffolder.version>1.3.0</apikit.scaffolder.version>
-        <mvn.core.version>3.6.0</mvn.core.version>
+        <mvn.core.version>3.9.2</mvn.core.version>
 
         <jacoco.version>0.8.5</jacoco.version>
         <allureJunitVersion>2.0-BETA17</allureJunitVersion>
@@ -92,7 +92,7 @@
                             <ignore>org.mule.tools.apikit.HelpMojo</ignore>
                         </ignores>
                     </instrumentation>
-                    <check />
+                    <check/>
                 </configuration>
             </plugin>
             <plugin>
